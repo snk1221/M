@@ -1,6 +1,6 @@
 import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.mjs";
 
-console.log("parser.js v0.51 module loaded");
+console.log("parser.js v0.52 module loaded");
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.mjs";
@@ -73,10 +73,27 @@ function parseDay(block) {
     (block.match(/正常|調整放假|和平紀念日|補行上班|刷卡不一致|開國紀念日|小年夜|除夕|初一|初二|初三|補假/g) || [null])[0];
 
   // 上下班卡：抓「最前面」出現的兩個 HH:MM（通常就是上/下班）
-  const times = block.match(/\b\d{2}:\d{2}\b/g) || [];
-  const clockIn = times[0] || null;
-  const clockOut = times[1] || null;
+  //const times = block.match(/\b\d{2}:\d{2}\b/g) || [];
+  //const clockIn = times[0] || null;
+  //const clockOut = times[1] || null;
+let clockIn = null;
+let clockOut = null;
 
+// 優先用刷卡資料
+const cardIn = block.match(/\(上\)\s*(\d{2}:\d{2})/);
+const cardOut = block.match(/\(下\)\s*(\d{2}:\d{2})/);
+
+if (cardIn) clockIn = cardIn[1];
+if (cardOut) clockOut = cardOut[1];
+
+// 若沒有刷卡，再退回用時間順序
+if (!clockIn || !clockOut) {
+  const times = block.match(/\b\d{2}:\d{2}\b/g) || [];
+  clockIn = clockIn || times[0] || null;
+  clockOut = clockOut || times[times.length - 1] || null;
+}
+
+  
   // 出勤時數：抓「正常 後面的數字」
   let workHours = null;
   const wh = block.match(/正常\s+(\d+(?:\.\d+)?)/);
@@ -84,7 +101,9 @@ function parseDay(block) {
 
  // 加班區段：允許「一 般 加 班」中間有空白/怪字
   const overtime = [];
-  const otRe = /一\s*般\s*加\s*班\s*\([^)]*?\b(\d{2}:\d{2})\b\s*~\s*[^)]*?\b(\d{2}:\d{2})\b\)/g;
+  const otRe =
+  /加班[:：]?\s*一\s*般\s*加\s*班\s*\([^)]*?\b(\d{2}:\d{2})\b\s*~\s*[^)]*?\b(\d{2}:\d{2})\b\)/g;
+
 
   for (const m of block.matchAll(otRe)) {
   overtime.push({ start: m[1], end: m[2] });
