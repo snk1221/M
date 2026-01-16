@@ -1,4 +1,4 @@
-console.log("parser.js loaded OK");
+console.log("parser.js V0.1 loaded OK");
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.js";
