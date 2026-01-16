@@ -33,11 +33,20 @@ function normalizeWeekdayChar(ch) {
   return map[ch] || ch;
 }
 
-function injectNewlineBeforeDates(text) {
+//function injectNewlineBeforeDates(text) {
   // 把所有 112-xx-xx( ? ) 前面強制插入換行（如果前面不是換行/開頭）
   // 這樣即使原本在同一行，也會被切成新段落
-  return text.replace(/(?!^)\s*(112-\d{2}-\d{2}\s*\([^)]+\))/g, "\n$1");
+  //return text.replace(/(?!^)\s*(112-\d{2}-\d{2}\s*\([^)]+\))/g, "\n$1");
+//}
+function injectNewlineBeforeDates(text) {
+  // 只在「不是在括號內」的日期前插入換行
+  // 避免切到加班時間 (112-xx-xx ... ~ ...)
+  return text.replace(
+    /(^|[^\(])\s*(112-\d{2}-\d{2}\s*\([^)]+\))/g,
+    (m, p1, p2) => `${p1}\n${p2}`
+  );
 }
+
 
 function splitDayBlocksByLine(text) {
   // 1) 逐行
