@@ -33,6 +33,12 @@ function normalizeWeekdayChar(ch) {
   return map[ch] || ch;
 }
 
+function injectNewlineBeforeDates(text) {
+  // 把所有 112-xx-xx( ? ) 前面強制插入換行（如果前面不是換行/開頭）
+  // 這樣即使原本在同一行，也會被切成新段落
+  return text.replace(/(?!^)\s*(112-\d{2}-\d{2}\s*\([^)]+\))/g, "\n$1");
+}
+
 function splitDayBlocksByLine(text) {
   // 1) 逐行
   const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
@@ -76,12 +82,14 @@ function parseDay(block) {
   const wh = block.match(/正常\s+(\d+(?:\.\d+)?)/);
   if (wh) workHours = Number(wh[1]);
 
-  // 加班區段：一般加班 (... HH:MM ~ ... HH:MM)
+ // 加班區段：允許「一 般 加 班」中間有空白/怪字
   const overtime = [];
-  const otRe = /一般加班\s*\([^)]*?\b(\d{2}:\d{2})\b\s*~\s*[^)]*?\b(\d{2}:\d{2})\b\)/g;
+  const otRe = /一\s*般\s*加\s*班\s*\([^)]*?\b(\d{2}:\d{2})\b\s*~\s*[^)]*?\b(\d{2}:\d{2})\b\)/g;
+
   for (const m of block.matchAll(otRe)) {
-    overtime.push({ start: m[1], end: m[2] });
-  }
+  overtime.push({ start: m[1], end: m[2] });
+}
+
 
   return { date, status, clockIn, clockOut, workHours, overtime, raw: block };
 }
@@ -101,10 +109,14 @@ document.addEventListener("DOMContentLoaded", () => {
       raw.value = "";
 
       const buf = await file.arrayBuffer();
-      const text = await extractAllTextWithNewlines(buf);
+      //const text = await extractAllTextWithNewlines(buf);
 
       // 用「行首日期」切段，避免加班括號內日期干擾
+      //const blocks = splitDayBlocksByLine(text);
+      let text = await extractAllTextWithNewlines(buf);
+      text = injectNewlineBeforeDates(text);   // ✅ 先把日期變成行首
       const blocks = splitDayBlocksByLine(text);
+
       const days = blocks.map(parseDay);
 
       raw.value = JSON.stringify(days.slice(0, 12), null, 2);
