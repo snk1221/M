@@ -19,6 +19,57 @@ async function extractAllText(arrayBuffer) {
   return out;
 }
 
+function mergeDays(dayList) {
+  const map = new Map();
+
+  for (const d of dayList) {
+    if (!d.date) continue;
+
+    if (!map.has(d.date)) {
+      map.set(d.date, {
+        date: d.date,
+        status: d.status,
+        clockIn: d.clockIn,
+        clockOut: d.clockOut,
+        workHours: d.workHours,
+        overtime: [...(d.overtime || [])],
+        raw: d.raw
+      });
+      continue;
+    }
+
+    const m = map.get(d.date);
+
+    // status：有值就補
+    if (!m.status && d.status) m.status = d.status;
+
+    // clockIn：取最早
+    if (d.clockIn && (!m.clockIn || d.clockIn < m.clockIn)) {
+      m.clockIn = d.clockIn;
+    }
+
+    // clockOut：取最晚
+    if (d.clockOut && (!m.clockOut || d.clockOut > m.clockOut)) {
+      m.clockOut = d.clockOut;
+    }
+
+    // workHours：保留有值的
+    if (!m.workHours && d.workHours) {
+      m.workHours = d.workHours;
+    }
+
+    // overtime：全部加進來
+    if (d.overtime?.length) {
+      m.overtime.push(...d.overtime);
+    }
+
+    // raw：接起來（方便 debug）
+    m.raw += " | " + d.raw;
+  }
+
+  return [...map.values()];
+}
+
 /* =========================
    星期怪字正規化
 ========================= */
@@ -145,7 +196,9 @@ document.addEventListener("DOMContentLoaded", () => {
       text = injectNewlineBeforeDates(text);
 
       const blocks = splitDayBlocks(text);
-      const days = blocks.map(parseDay);
+      //const days = blocks.map(parseDay);
+      const daysRaw = blocks.map(parseDay);
+      const days = mergeDays(daysRaw);
 
       raw.value = JSON.stringify(days.slice(0, 12), null, 2);
       status.textContent = `完成：共解析 ${days.length} 天（顯示前 12 筆）`;
