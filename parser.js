@@ -1,3 +1,14 @@
+console.log("parser.js v0.2 loaded");
+
+if (typeof pdfjsLib === "undefined") {
+  console.error("pdfjsLib is undefined：pdf.js 沒有載入成功或載入順序錯");
+  alert("pdf.js 沒載入成功：請確認 index.html 先載入 pdf.min.js 再載入 parser.js");
+  throw new Error("pdfjsLib is undefined");
+}
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.js";
+
 console.log("parser.js V0.1 loaded OK");
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
