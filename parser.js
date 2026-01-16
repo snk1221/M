@@ -1,6 +1,6 @@
 import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.mjs";
 
-console.log("parser.js v1.0 loaded");
+console.log("parser.js v1.01 loaded");
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.mjs";
@@ -53,9 +53,11 @@ function splitDayBlocks(text) {
   const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
 
   // 民國年通用 + 必須是「一天摘要」
-  const dayStartRe =
-    /^\d{3}-\d{2}-\d{2}\([^)]+\).*(正常|補\s*行\s*上班|調整放假|刷卡|差假)/;
+  //const dayStartRe =
+  //  /^\d{3}-\d{2}-\d{2}\([^)]+\).*(正常|補\s*行\s*上班|調整放假|刷卡|差假)/;
+  const dayStartRe = /^\d{3}-\d{2}-\d{2}\([^)]+\)/;
 
+  
   const blocks = [];
   let cur = [];
 
