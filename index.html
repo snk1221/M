@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>出勤 PDF 解析測試</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Microsoft JhengHei,Arial; margin:20px;}
+    textarea{width:100%; height:260px;}
+    pre{background:#f6f6f6; padding:12px; overflow:auto;}
+  </style>
+</head>
+<body>
+  <h2>Step 1：讀取 PDF → 抽出全文文字</h2>
+  <input id="file" type="file" accept="application/pdf" />
+  <button id="btn">解析</button>
+  <p id="status"></p>
+
+  <h3>抽出的原始文字（前 4000 字）</h3>
+  <textarea id="raw" readonly></textarea>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.js"></script>
+  <script src="./parser.js"></script>
+</body>
+</html>
