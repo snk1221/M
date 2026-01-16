@@ -57,6 +57,7 @@ function splitDayBlocks(text) {
   //  /^\d{3}-\d{2}-\d{2}\([^)]+\).*(正常|補\s*行\s*上班|調整放假|刷卡|差假)/;
   const dayStartRe = /^\d{3}-\d{2}-\d{2}\([^)]+\)/;
 
+  console.log("lines:", lines.slice(0, 20));
   
   const blocks = [];
   let cur = [];
