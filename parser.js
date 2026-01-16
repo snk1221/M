@@ -1,38 +1,24 @@
-const $ = (id) => document.getElementById(id);
+console.log("parser.js loaded OK");
 
-// ✅ 先強制關閉 worker：避免 file:// 或 CSP 擋住就「沒反應」
-pdfjsLib.disableWorker = true;
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM ready");
 
-async function extractAllText(arrayBuffer) {
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let out = "";
+  const file = document.getElementById("file");
+  const btn = document.getElementById("btn");
+  const status = document.getElementById("status");
 
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const page = await pdf.getPage(p);
-    const content = await page.getTextContent();
-    const strings = content.items.map(it => it.str);
-    out += `\n--- page ${p} ---\n` + strings.join("\n") + "\n";
+  if (!file || !btn || !status) {
+    console.error("找不到 DOM 元素", { file, btn, status });
+    alert("HTML 元素 id 對不上，請看 Console");
+    return;
   }
-  return out;
-}
 
-$("btn").addEventListener("click", async () => {
-  try {
-    const f = $("file").files?.[0];
-    if (!f) return alert("請先選一個 PDF");
-
-    $("status").textContent = "讀取中...";
-    const buf = await f.arrayBuffer();
-
-    $("status").textContent = "解析中...";
-    const text = await extractAllText(buf);
-
-    $("raw").value = text.slice(0, 4000);
-    $("status").textContent = `完成：抽出 ${text.length} 字元`;
-    console.log(text);
-  } catch (e) {
-    console.error(e);
-    $("status").textContent = "失敗：" + (e?.message || e);
-    alert("解析失敗，請看 F12 Console 的錯誤訊息");
-  }
+  btn.addEventListener("click", () => {
+    if (!file.files.length) {
+      alert("還沒選 PDF");
+      return;
+    }
+    status.textContent = "已選檔：" + file.files[0].name;
+    console.log("選到檔案", file.files[0]);
+  });
 });
