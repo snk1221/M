@@ -1,6 +1,6 @@
 import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.mjs";
 
-console.log("parser.js v1.11 baseline loaded");
+console.log("parser.js v1.12 baseline loaded");
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.mjs";
@@ -148,27 +148,56 @@ btnCalc.addEventListener("click", () => {
   const type = salaryType.value;
   const amount = Number(salaryAmount.value);
 
-  if (!amount) {
-    alert("請輸入薪資金額");
+  if (!amount || amount <= 0) {
+    alert("請輸入正確的薪資金額");
     return;
   }
 
-  // 👉 先用最簡單版本
+  /* ---------- 基本換算 ---------- */
   let monthSalary = 0;
+  let daySalary = 0;
+  let hourSalary = 0;
 
   if (type === "month") {
     monthSalary = amount;
-  } else if (type === "day") {
-    monthSalary = amount * 30;
-  } else if (type === "hour") {
-    monthSalary = amount * 8 * 30;
+    daySalary = monthSalary / 30;
+    hourSalary = daySalary / 8;
   }
 
+  if (type === "day") {
+    daySalary = amount;
+    monthSalary = daySalary * 30;
+    hourSalary = daySalary / 8;
+  }
+
+  if (type === "hour") {
+    hourSalary = amount;
+    daySalary = hourSalary * 8;
+    monthSalary = daySalary * 30;
+  }
+
+  /* ---------- 加班時薪 ---------- */
+  const otHourFirst2 = hourSalary * 1.34;
+  const otHourAfter2 = hourSalary * 1.67;
+
+  /* ---------- 顯示結果 ---------- */
   calcResult.textContent =
-`【試算結果】
+`【薪資試算結果】
+
+【基本薪資】
 月薪：約 ${monthSalary.toFixed(0)} 元
-（此為基礎估算，尚未含加班）`;
+日薪：約 ${daySalary.toFixed(0)} 元
+時薪：約 ${hourSalary.toFixed(2)} 元
+
+【加班時薪（平日）】
+前 2 小時：${otHourFirst2.toFixed(2)} 元 / 小時
+後 2 小時：${otHourAfter2.toFixed(2)} 元 / 小時
+
+※ 目前僅為「單價試算」
+※ 尚未套用 PDF 內實際加班時數
+`;
 });
+
 
   const fileInput = document.getElementById("file");
   const btn = document.getElementById("btn");
