@@ -1,13 +1,13 @@
 import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.mjs";
 
-console.log("parser.js v1.02 loaded");
+console.log("parser.js v1.1 baseline loaded");
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.mjs";
 
-/* =========================
-   PDF 抽全文（保留換行）
-========================= */
+/* -------------------------
+ *  PDF 讀取
+ * ------------------------- */
 async function extractAllText(arrayBuffer) {
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   let out = "";
@@ -19,60 +19,9 @@ async function extractAllText(arrayBuffer) {
   return out;
 }
 
-function mergeDays(dayList) {
-  const map = new Map();
-
-  for (const d of dayList) {
-    if (!d.date) continue;
-
-    if (!map.has(d.date)) {
-      map.set(d.date, {
-        date: d.date,
-        status: d.status,
-        clockIn: d.clockIn,
-        clockOut: d.clockOut,
-        workHours: d.workHours,
-        overtime: [...(d.overtime || [])],
-        raw: d.raw
-      });
-      continue;
-    }
-
-    const m = map.get(d.date);
-
-    // status：有值就補
-    if (!m.status && d.status) m.status = d.status;
-
-    // clockIn：取最早
-    if (d.clockIn && (!m.clockIn || d.clockIn < m.clockIn)) {
-      m.clockIn = d.clockIn;
-    }
-
-    // clockOut：取最晚
-    if (d.clockOut && (!m.clockOut || d.clockOut > m.clockOut)) {
-      m.clockOut = d.clockOut;
-    }
-
-    // workHours：保留有值的
-    if (!m.workHours && d.workHours) {
-      m.workHours = d.workHours;
-    }
-
-    // overtime：全部加進來
-    if (d.overtime?.length) {
-      m.overtime.push(...d.overtime);
-    }
-
-    // raw：接起來（方便 debug）
-    m.raw += " | " + d.raw;
-  }
-
-  return [...map.values()];
-}
-
-/* =========================
-   星期怪字正規化
-========================= */
+/* -------------------------
+ *  工具
+ * ------------------------- */
 function normalizeWeekdayChar(ch) {
   const map = {
     "⽇": "日", "日": "日",
@@ -86,10 +35,7 @@ function normalizeWeekdayChar(ch) {
   return map[ch] || ch;
 }
 
-/* =========================
-   只在「真正新的一天」前插換行
-   （避免切到加班括號內日期）
-========================= */
+/* 只在「非括號內」的日期前換行 */
 function injectNewlineBeforeDates(text) {
   return text.replace(
     /(^|[^\(])\s*(\d{3}-\d{2}-\d{2}\s*\([^)]+\))/g,
@@ -97,70 +43,72 @@ function injectNewlineBeforeDates(text) {
   );
 }
 
-/* =========================
-   依「摘要行」切天（關鍵）
-========================= */
+/* -------------------------
+ *  切成「每天一段」
+ * ------------------------- */
 function splitDayBlocks(text) {
-  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const lines = text
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(Boolean);
 
-  // 民國年通用 + 必須是「一天摘要」
-  //const dayStartRe =
-  //  /^\d{3}-\d{2}-\d{2}\([^)]+\).*(正常|補\s*行\s*上班|調整放假|刷卡|差假)/;
   const dayStartRe = /^\d{3}-\d{2}-\d{2}\([^)]+\)/;
 
-  console.log("lines:", lines.slice(0, 20));
-  
   const blocks = [];
-  let cur = [];
+  let current = null;
 
   for (const line of lines) {
     if (dayStartRe.test(line)) {
-      if (cur.length) blocks.push(cur.join(" "));
-      cur = [line];
-    } else {
-      if (cur.length) cur.push(line);
+      if (current) blocks.push(current.join(" "));
+      current = [line];
+    } else if (current) {
+      current.push(line);
     }
   }
-  if (cur.length) blocks.push(cur.join(" "));
+  if (current) blocks.push(current.join(" "));
 
   return blocks;
 }
 
-/* =========================
-   解析單一天
-========================= */
+/* -------------------------
+ *  解析「一天」
+ * ------------------------- */
 function parseDay(block) {
-  // 日期
+  /* 日期 */
   const dm = block.match(/^(\d{3}-\d{2}-\d{2})\(([^)]+)\)/);
-  const date = dm ? `${dm[1]}(${normalizeWeekdayChar(dm[2][0])})` : null;
+  const date = dm
+    ? `${dm[1]}(${normalizeWeekdayChar(dm[2].trim()[0])})`
+    : null;
 
-  // 狀態
+  /* 狀態 */
   const status =
-    (block.match(/正常|補\s*行\s*上班|調整放假|刷卡不一致|差假|和平紀念日|開國紀念日|補假/g) || [null])[0];
+    (block.match(
+      /正常|補行上班|調整放假|刷卡不一致|差假|和平紀念日|開國紀念日|小年夜|除夕|初一|初二|初三/g
+    ) || [null])[0];
 
-  // 刷卡時間（優先）
+  /* 刷卡時間（優先） */
   let clockIn = null;
   let clockOut = null;
 
-  const inM = block.match(/\(上\)\s*(\d{2}:\d{2})/);
-  const outM = block.match(/\(下\)\s*(\d{2}:\d{2})/);
+  const cardIn = [...block.matchAll(/\(上\)\s*(\d{2}:\d{2})/g)];
+  const cardOut = [...block.matchAll(/\(下\)\s*(\d{2}:\d{2})/g)];
 
-  if (inM) clockIn = inM[1];
-  if (outM) clockOut = outM[1];
+  if (cardIn.length) clockIn = cardIn[0][1];
+  if (cardOut.length) clockOut = cardOut[cardOut.length - 1][1];
 
-  // 備援：取第一個與最後一個時間
+  /* fallback：時間序 */
   if (!clockIn || !clockOut) {
     const times = block.match(/\b\d{2}:\d{2}\b/g) || [];
-    clockIn = clockIn || times[0] || null;
-    clockOut = clockOut || times[times.length - 1] || null;
+    if (!clockIn) clockIn = times[0] || null;
+    if (!clockOut) clockOut = times[times.length - 1] || null;
   }
 
-  // 出勤時數
+  /* 出勤時數 */
   let workHours = null;
   const wh = block.match(/正常\s+(\d+(?:\.\d+)?)/);
   if (wh) workHours = Number(wh[1]);
 
-  // 加班（允許「⼀ 般 加 班」）
+  /* 加班（先只抓，不計算） */
   const overtime = [];
   const otRe =
     /加班[:：]?\s*一\s*般\s*加\s*班\s*\([^)]*?\b(\d{2}:\d{2})\b\s*~\s*[^)]*?\b(\d{2}:\d{2})\b\)/g;
@@ -169,12 +117,20 @@ function parseDay(block) {
     overtime.push({ start: m[1], end: m[2] });
   }
 
-  return { date, status, clockIn, clockOut, workHours, overtime, raw: block };
+  return {
+    date,
+    status,
+    clockIn,
+    clockOut,
+    workHours,
+    overtime,
+    raw: block
+  };
 }
 
-/* =========================
-   UI 綁定
-========================= */
+/* -------------------------
+ *  DOM 綁定
+ * ------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("file");
   const btn = document.getElementById("btn");
@@ -183,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btn.addEventListener("click", async () => {
     if (!fileInput.files.length) {
-      alert("還沒選 PDF");
+      alert("請先選擇 PDF");
       return;
     }
 
@@ -196,14 +152,12 @@ document.addEventListener("DOMContentLoaded", () => {
       text = injectNewlineBeforeDates(text);
 
       const blocks = splitDayBlocks(text);
-      //const days = blocks.map(parseDay);
-      const daysRaw = blocks.map(parseDay);
-      const days = mergeDays(daysRaw);
+      const days = blocks.map(parseDay);
 
       raw.value = JSON.stringify(days.slice(0, 12), null, 2);
-      status.textContent = `完成：共解析 ${days.length} 天（顯示前 12 筆）`;
+      status.textContent = `完成：共 ${days.length} 天（顯示前 12 筆）`;
 
-      console.log("days =", days);
+      console.log("days:", days);
     } catch (e) {
       console.error(e);
       status.textContent = "解析失敗";
