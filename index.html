@@ -24,24 +24,19 @@
 
 <h2>Step 2：薪資試算</h2>
 
-<label>
-  薪資類型：
-  <select id="salaryType">
-    <option value="month">月薪</option>
-    <option value="day">日薪</option>
-    <option value="hour">時薪</option>
-  </select>
-</label>
+薪資類型：
+<select id="salaryType">
+  <option value="month">月薪</option>
+  <option value="day">日薪</option>
+  <option value="hour">時薪</option>
+</select>
 
-<label>
-  金額：
-  <input type="number" id="salaryAmount" placeholder="請輸入金額">
-</label>
+金額：
+<input id="salaryAmount" type="number" value="37500" />
 
-<button id="calcSalary">計算</button>
+<button id="btnCalc">計算</button>
 
-<h3>換算結果</h3>
-<pre id="salaryResult"></pre>
+<pre id="calcResult"></pre>
 
 <h3>PDF 試算月薪</h3>
 <pre id="pdfSalaryResult"></pre>
