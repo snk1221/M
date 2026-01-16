@@ -177,8 +177,8 @@ btnCalc.addEventListener("click", () => {
   }
 
   /* ---------- 加班時薪 ---------- */
-  const otHourFirst2 = hourSalary * 1.34;
-  const otHourAfter2 = hourSalary * 1.67;
+  const otHourFirst2 = hourSalary * 1.33;
+  const otHourAfter2 = hourSalary * 1.66;
 
   /* ---------- 顯示結果 ---------- */
   calcResult.textContent =
