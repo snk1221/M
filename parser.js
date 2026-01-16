@@ -132,6 +132,44 @@ function parseDay(block) {
  *  DOM 綁定
  * ------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
+const btnCalc = document.getElementById("btnCalc");
+const salaryType = document.getElementById("salaryType");
+const salaryAmount = document.getElementById("salaryAmount");
+const calcResult = document.getElementById("calcResult");
+
+btnCalc.addEventListener("click", () => {
+  console.log("💰 計算被點擊");
+
+  if (!window.days || !window.days.length) {
+    alert("請先解析 PDF");
+    return;
+  }
+
+  const type = salaryType.value;
+  const amount = Number(salaryAmount.value);
+
+  if (!amount) {
+    alert("請輸入薪資金額");
+    return;
+  }
+
+  // 👉 先用最簡單版本
+  let monthSalary = 0;
+
+  if (type === "month") {
+    monthSalary = amount;
+  } else if (type === "day") {
+    monthSalary = amount * 30;
+  } else if (type === "hour") {
+    monthSalary = amount * 8 * 30;
+  }
+
+  calcResult.textContent =
+`【試算結果】
+月薪：約 ${monthSalary.toFixed(0)} 元
+（此為基礎估算，尚未含加班）`;
+});
+
   const fileInput = document.getElementById("file");
   const btn = document.getElementById("btn");
   const status = document.getElementById("status");
@@ -153,6 +191,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const blocks = splitDayBlocks(text);
       const days = blocks.map(parseDay);
+      window.days = days;
+
 
       raw.value = JSON.stringify(days.slice(0, 12), null, 2);
       status.textContent = `完成：共 ${days.length} 天（顯示前 12 筆）`;
