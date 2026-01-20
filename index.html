@@ -12,6 +12,42 @@
   </style>
 </head>
 <body>
+  <section id="settings" style="margin-bottom:20px;">
+  <h2>試算參數設定</h2>
+
+  <fieldset>
+    <legend>基本工資</legend>
+    月薪（元）：
+    <input id="setMonthSalary" type="number" value="37500"><br>
+
+    日薪（工時計算用，若空則自算）：
+    <input id="setDayHours" type="number" value="8"><br>
+
+    每月計薪天數：
+    <input id="setMonthDays" type="number" value="30">
+  </fieldset>
+
+  <fieldset>
+    <legend>加班倍率（平日）</legend>
+    前 2 小時倍率：
+    <input id="setOTRate1" type="number" step="0.01" value="1.34"><br>
+
+    後續小時倍率：
+    <input id="setOTRate2" type="number" step="0.01" value="1.67">
+  </fieldset>
+
+  <fieldset>
+    <legend>加班倍率（假日 / 例假）</legend>
+    例假第 1~8 小時：
+    <input id="setHolidayRate1" type="number" step="0.01" value="2"><br>
+
+    例假第 9 小時起：
+    <input id="setHolidayRate2" type="number" step="0.01" value="2.67">
+  </fieldset>
+
+  <button id="btnApplySettings">套用參數</button>
+</section>
+
   <h2>Step 1：讀取 PDF → 抽出全文文字</h2>
   <input id="file" type="file" accept="application/pdf" />
   <button id="btn">解析</button>
