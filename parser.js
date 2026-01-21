@@ -4,7 +4,7 @@
 
 import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.mjs";
 
-console.log("parser.js v1.21 loaded");
+console.log("parser.js v1.22 loaded");
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.mjs";
@@ -37,6 +37,21 @@ async function extractAllText(arrayBuffer) {
     text += content.items.map(i => i.str).join("\n") + "\n";
   }
   return text;
+}
+
+  function parseOvertimeRanges(text) {
+  const ranges = [];
+
+  const re =
+    /一\s*般\s*加\s*班\s*\([^)]*?(\d{2}:\d{2})\s*~\s*[^)]*?(\d{2}:\d{2})\)/g;
+
+  for (const m of text.matchAll(re)) {
+    ranges.push({
+      start: m[1],
+      end: m[2]
+    });
+  }
+  return ranges;
 }
 
 /* ==============================
@@ -108,12 +123,15 @@ function parseDay(block) {
   const wh = block.match(/正常\s+(\d+)/);
   if (wh) workHours = Number(wh[1]);
 
+    const overtimeRanges = parseOvertimeRanges(block);
+
   return {
     date,
     status,
     clockIn,
     clockOut,
     workHours,
+    overtimeRanges,
     raw: block
   };
 }
