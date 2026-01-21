@@ -54,6 +54,11 @@ async function extractAllText(arrayBuffer) {
   return ranges;
 }
 
+ function timeToMinutes(t) {
+   const [h, m] = t.split(":").map(Number);
+   return h * 60 + m;
+ }
+
 /* ==============================
  * 工具：星期字修正
  * ============================== */
@@ -90,6 +95,52 @@ function splitByDate(text) {
   }
   if (buf.length) blocks.push(buf.join(" | "));
   return blocks;
+}
+function calcOvertimePay(day, hourSalary) {
+  let totalMinutes = 0;
+  let pay = 0;
+
+  for (const r of day.overtimeRanges || []) {
+    const mins = timeToMinutes(r.end) - timeToMinutes(r.start);
+    if (mins <= 0) continue;
+
+    let remaining = mins;
+
+    // 前 2 小時（120 分鐘）
+    const first = Math.min(remaining, 120);
+    pay += (first / 60) * hourSalary * settings.otRate1;
+    remaining -= first;
+
+    // 後續
+    if (remaining > 0) {
+      pay += (remaining / 60) * hourSalary * settings.otRate2;
+    }
+
+    totalMinutes += mins;
+  }
+
+  return {
+    minutes: totalMinutes,
+    pay: Number(pay.toFixed(2))
+  };
+}
+function calcMonthOvertime(days) {
+  const base = calcBaseSalary();
+  let totalMinutes = 0;
+  let totalPay = 0;
+
+  for (const d of days) {
+    if (!d.overtimeRanges?.length) continue;
+    const r = calcOvertimePay(d, base.hour);
+    totalMinutes += r.minutes;
+    totalPay += r.pay;
+  }
+
+  return {
+    totalMinutes,
+    totalHours: Number((totalMinutes / 60).toFixed(2)),
+    totalPay: Number(totalPay.toFixed(0))
+  };
 }
 
 /* ==============================
