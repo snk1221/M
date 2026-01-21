@@ -175,6 +175,8 @@ function parseDay(block) {
   if (wh) workHours = Number(wh[1]);
 
     const overtimeRanges = parseOvertimeRanges(block);
+  window.days = days;
+
 
   return {
     date,
@@ -273,3 +275,25 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnCalcSalary")
     .addEventListener("click", renderSalaryResult);
 });
+document.getElementById("btnCalcPDFSalary")
+  .addEventListener("click", () => {
+
+    if (!window.days || !window.days.length) {
+      alert("請先解析 PDF");
+      return;
+    }
+
+    const base = calcBaseSalary();
+    const ot = calcMonthOvertime(window.days);
+
+    document.getElementById("pdfSalaryResult").innerHTML = `
+<b>【PDF 試算結果】</b><br>
+基本月薪：${base.month} 元<br>
+加班時數：${ot.totalHours} 小時<br>
+加班費：${ot.totalPay} 元<br><br>
+
+<b>👉 試算實領：</b>
+${base.month + ot.totalPay} 元
+`;
+});
+
